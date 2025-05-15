@@ -1,8 +1,12 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct ReferenceMealsView: View {
     @ObservedObject var viewModel: MealTrackerViewModel
     @State private var showingAddMeal = false
+    @State private var showingImportSheet = false
+    @State private var showingImportError = false
+    @State private var importError: String = ""
     
     var body: some View {
         NavigationView {
@@ -29,13 +33,50 @@ struct ReferenceMealsView: View {
             .navigationTitle("Reference Meals")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { showingAddMeal = true }) {
+                    Menu {
+                        Button(action: { showingAddMeal = true }) {
+                            Label("Add Meal", systemImage: "plus")
+                        }
+                        Button(action: { showingImportSheet = true }) {
+                            Label("Import CSV", systemImage: "square.and.arrow.down")
+                        }
+                    } label: {
                         Image(systemName: "plus")
                     }
                 }
             }
             .sheet(isPresented: $showingAddMeal) {
                 AddReferenceMealView(viewModel: viewModel)
+            }
+            .fileImporter(
+                isPresented: $showingImportSheet,
+                allowedContentTypes: [UTType.commaSeparatedText],
+                allowsMultipleSelection: false
+            ) { result in
+                switch result {
+                case .success(let files):
+                    guard let selectedFile = files.first else { return }
+                    
+                    if selectedFile.startAccessingSecurityScopedResource() {
+                        defer { selectedFile.stopAccessingSecurityScopedResource() }
+                        
+                        do {
+                            let csvString = try String(contentsOf: selectedFile, encoding: .utf8)
+                            viewModel.importReferenceMealsFromCSV(csvString)
+                        } catch {
+                            importError = "Failed to read file: \(error.localizedDescription)"
+                            showingImportError = true
+                        }
+                    }
+                case .failure(let error):
+                    importError = "Failed to import file: \(error.localizedDescription)"
+                    showingImportError = true
+                }
+            }
+            .alert("Import Error", isPresented: $showingImportError) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(importError)
             }
         }
     }

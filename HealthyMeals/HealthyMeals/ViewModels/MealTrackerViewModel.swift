@@ -73,4 +73,32 @@ class MealTrackerViewModel: ObservableObject {
         
         return csvString
     }
+    
+    func importReferenceMealsFromCSV(_ csvString: String) {
+        let rows = csvString.components(separatedBy: .newlines)
+            .filter { !$0.isEmpty }
+            .map { $0.components(separatedBy: ",") }
+        
+        // Skip header row if it exists
+        let startIndex = rows.first?.contains("Name") == true ? 1 : 0
+        
+        for row in rows[startIndex...] {
+            guard row.count >= 5,
+                  let calories = Double(row[1].trimmingCharacters(in: .whitespaces)),
+                  let protein = Double(row[2].trimmingCharacters(in: .whitespaces)),
+                  let fat = Double(row[3].trimmingCharacters(in: .whitespaces)),
+                  let carbs = Double(row[4].trimmingCharacters(in: .whitespaces)) else {
+                continue
+            }
+            
+            let meal = ReferenceMeal(
+                name: row[0].trimmingCharacters(in: .whitespaces),
+                calories: calories,
+                protein: protein,
+                fat: fat,
+                carbs: carbs
+            )
+            addReferenceMeal(meal)
+        }
+    }
 } 
