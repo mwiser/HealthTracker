@@ -219,7 +219,7 @@ struct AddDailyEntryView: View {
         }
     }
     
-    private let portionOptions: [Double] = [1.0, 1.5, 2.0]
+    private let portionOptions: [Double] = [0.5, 1.0, 1.5, 2.0, 3.0]
     
     var body: some View {
         NavigationView {
